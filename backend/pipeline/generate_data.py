@@ -115,10 +115,16 @@ def generate_transactions(num_records=2000, is_test=False):
     return df
 
 if __name__ == "__main__":
+    import os
+    
+    # Ensure directories exist
+    os.makedirs("../data/raw_train", exist_ok=True)
+    os.makedirs("../data/raw_test", exist_ok=True)
+    
     train_df = generate_transactions(num_records=2000, is_test=False)
-    train_df.to_csv('train_dataset.csv', index=False)
+    train_df.to_csv('../data/raw_train/train_dataset.csv', index=False)
     print("train_dataset.csv generated with shape:", train_df.shape)
     
     test_df = generate_transactions(num_records=2000, is_test=True)
-    test_df.to_csv('test_dataset.csv', index=False)
+    test_df.to_csv('../data/raw_test/test_dataset.csv', index=False)
     print("test_dataset.csv generated with shape:", test_df.shape)
