@@ -1,10 +1,6 @@
-# Ignore massive dependency folders
 node_modules/
-.venv/
 __pycache__/
-
-# Ignore build outputs
-.next/
-
-# Ignore secret environment variables
-.env
+venv/
+.venv/
+*.csv
+*.pt
