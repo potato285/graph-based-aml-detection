@@ -50,7 +50,14 @@ def atomic_registry():
             with open(REGISTRY_PATH, "w") as f:
                 json.dump({"datasets": {}}, f, indent=4)
         with open(REGISTRY_PATH, "r") as f:
-            data = json.load(f)
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                # Corrupted registry – start fresh and overwrite the file
+                data = {"datasets": {}}
+                # Write a clean registry back to disk so future loads succeed
+                with open(REGISTRY_PATH, "w") as wf:
+                    json.dump(data, wf, indent=4)
         
         yield data
         
@@ -66,8 +73,14 @@ def load_registry() -> dict:
             with open(REGISTRY_PATH, "w") as f:
                 json.dump({"datasets": {}}, f, indent=4)
         with open(REGISTRY_PATH, "r") as f:
-            return json.load(f)
-
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                # Corrupted registry – reset to empty dict and overwrite the file
+                data = {"datasets": {}}
+                with open(REGISTRY_PATH, "w") as wf:
+                    json.dump(data, wf, indent=4)
+    return data
 def save_registry(data: dict) -> None:
     """Persist the registry dict to disk safely."""
     os.makedirs(os.path.dirname(REGISTRY_PATH), exist_ok=True)
@@ -126,6 +139,27 @@ def get_dataset(dataset_id: str) -> dict:
     if dataset_id not in registry["datasets"]:
         raise ValueError(f"Dataset '{dataset_id}' not found in registry.")
     return registry["datasets"][dataset_id]
+
+
+def list_datasets(state: str | None = None, split: str | None = None) -> list[str]:
+    """Return a list of dataset IDs optionally filtered by `state` and/or `split`.
+
+    Parameters
+    ----------
+    state: Optional[str]
+        One of the lifecycle states (e.g. "raw", "built", "trained", "inferred").
+    split: Optional[str]
+        "train" or "test" – matches the `type` field stored in the registry.
+    """
+    datasets = get_all_datasets()
+    ids = []
+    for ds_id, meta in datasets.items():
+        if state and meta.get("status") != state:
+            continue
+        if split and meta.get("type") != split:
+            continue
+        ids.append(ds_id)
+    return ids
 
 
 def get_all_datasets() -> dict:
