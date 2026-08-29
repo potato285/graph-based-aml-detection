@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 import torch
+# pyrefly: ignore [missing-import]
 import torch.nn as nn
 import json
 import os
@@ -161,19 +163,26 @@ def undo_training(dataset_id: str) -> None:
 # Inference
 # ---------------------------------------------------------------------------
 
-def run_inference(data, dataset_id: str) -> None:
+def run_inference(data, dataset_id: str, train_dataset_id: str = None) -> None:
     """
     Load trained weights, run inference on `data`, write the graph JSON for
     the frontend, and update the registry
-    (status → 'inferred', paths.graph_results → relative path).
+    (status -> 'inferred', paths.graph_results -> relative path).
+
+    Parameters
+    ----------
+    data             : PyG Data object for the test/infer dataset
+    dataset_id       : ID of the dataset being scored
+    train_dataset_id : ID of the trained model to load weights from.
+                       Must be provided (or auto-resolved before calling this).
     """
     print("--- Running Inference ---")
 
-    weights_abs = _model_weights_path(dataset_id)
+    weights_abs = _model_weights_path(train_dataset_id or dataset_id)
     if not os.path.exists(weights_abs):
         raise FileNotFoundError(
             f"Model weights not found at {weights_abs}. "
-            "Run process_graph() on a train dataset first."
+            f"Ensure dataset '{train_dataset_id or dataset_id}' has been trained first."
         )
 
     model = FraudGATv2(in_channels=5, hidden_channels=16, heads=4, out_channels=1)
@@ -218,18 +227,71 @@ def run_inference(data, dataset_id: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Orchestrator helpers
+# ---------------------------------------------------------------------------
+
+def _resolve_train_dataset_id(explicit_id: str = None) -> str:
+    """
+    Return a validated train_dataset_id.
+
+    - If `explicit_id` is given, verify it exists and is trained.
+    - Otherwise, scan the registry for datasets with status 'trained'.
+      Exactly one must exist; raise a clear error if zero or multiple found.
+    """
+    all_datasets = registry.get_all_datasets()
+
+    if explicit_id is not None:
+        if explicit_id not in all_datasets:
+            raise ValueError(f"train_dataset_id '{explicit_id}' not found in registry.")
+        if all_datasets[explicit_id]["status"] != "trained":
+            raise ValueError(
+                f"Dataset '{explicit_id}' has status "
+                f"'{all_datasets[explicit_id]['status']}', expected 'trained'."
+            )
+        return explicit_id
+
+    # Auto-detect
+    trained = [
+        did for did, info in all_datasets.items()
+        if info["status"] == "trained"
+    ]
+
+    if not trained:
+        raise ValueError(
+            "No trained dataset found in the registry. "
+            "Run process_graph() on a train dataset first."
+        )
+    if len(trained) > 1:
+        raise ValueError(
+            f"Multiple trained datasets found: {trained}. "
+            "Pass train_dataset_id explicitly to resolve ambiguity."
+        )
+
+    resolved = trained[0]
+    print(f"[engine] Auto-detected train model: {resolved}")
+    return resolved
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
 
-def process_graph(dataset_id: str) -> None:
+def process_graph(dataset_id: str, train_dataset_id: str = None) -> None:
     """
-    Top-level entry point.  Loads the tensor for `dataset_id` from the
+    Top-level entry point. Loads the tensor for `dataset_id` from the
     registry and dispatches to train_model or run_inference.
+
+    Parameters
+    ----------
+    dataset_id       : The dataset to process (train or test).
+    train_dataset_id : For test/infer datasets only — specifies which trained
+                       model's weights to load.  If omitted, auto-detected from
+                       the registry (works when exactly one trained model exists).
     """
     dataset_info = registry.get_dataset(dataset_id)
     dataset_type = dataset_info["type"]
 
-    # Resolve relative tensor path → absolute for file I/O
+    # Resolve relative tensor path -> absolute for file I/O
     tensor_path = registry.resolve_path(dataset_info["paths"]["tensor"])
 
     if not os.path.exists(tensor_path):
@@ -244,8 +306,10 @@ def process_graph(dataset_id: str) -> None:
     if dataset_type == "train":
         train_model(data, dataset_id)
     else:
-        run_inference(data, dataset_id)
+        resolved_train_id = _resolve_train_dataset_id(train_dataset_id)
+        run_inference(data, dataset_id, train_dataset_id=resolved_train_id)
 
 
 if __name__ == "__main__":
     print("Please import and call process_graph(dataset_id) directly.")
+

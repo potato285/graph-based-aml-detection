@@ -5,3 +5,5 @@ venv/
 *.csv
 *.pt
 backend/data/registry.json
+frontend/public/graphs/
+frontend/public/metrics/
