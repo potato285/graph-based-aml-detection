@@ -132,7 +132,7 @@ if __name__ == "__main__":
 
     # ---- Train Dataset -----------------------------------------------------
     train_df        = generate_transactions(num_records=2000, is_test=False)
-    train_uuid      = registry.register_dataset("Synthetic_Train_10k", "train", "")
+    train_uuid      = registry.register_dataset("Synthetic_Train_2k", "train", "")
     train_csv_path  = os.path.join(RAW_TRAIN_DIR, f"{train_uuid}.csv")
     train_df.to_csv(train_csv_path, index=False)
     # update_dataset_status stores the path relative to REPO_ROOT automatically
@@ -141,7 +141,7 @@ if __name__ == "__main__":
 
     # ---- Test Dataset ------------------------------------------------------
     test_df       = generate_transactions(num_records=2000, is_test=True)
-    test_uuid     = registry.register_dataset("Synthetic_Test_10k", "test", "")
+    test_uuid     = registry.register_dataset("Synthetic_Test_2k", "test", "")
     test_csv_path = os.path.join(RAW_TEST_DIR, f"{test_uuid}.csv")
     test_df.to_csv(test_csv_path, index=False)
     registry.update_dataset_status(test_uuid, "raw", {"raw_csv": test_csv_path})
