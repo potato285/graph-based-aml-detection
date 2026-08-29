@@ -1,6 +1,9 @@
 import json
 import os
 import uuid
+import portalocker
+import contextlib
+import shutil
 
 # ---------------------------------------------------------------------------
 # Path constants (anchored to this file's location, independent of CWD)
@@ -37,21 +40,41 @@ def resolve_path(rel_or_abs: str) -> str:
 # Registry I/O
 # ---------------------------------------------------------------------------
 
+@contextlib.contextmanager
+def atomic_registry():
+    """Context manager for atomic read-modify-write on the registry."""
+    os.makedirs(os.path.dirname(REGISTRY_PATH), exist_ok=True)
+    lock_path = REGISTRY_PATH + ".lock"
+    with portalocker.Lock(lock_path, 'w', timeout=10):
+        if not os.path.exists(REGISTRY_PATH):
+            with open(REGISTRY_PATH, "w") as f:
+                json.dump({"datasets": {}}, f, indent=4)
+        with open(REGISTRY_PATH, "r") as f:
+            data = json.load(f)
+        
+        yield data
+        
+        with open(REGISTRY_PATH, "w") as f:
+            json.dump(data, f, indent=4)
+
 def load_registry() -> dict:
-    """Load the registry from disk, creating an empty one if it doesn't exist."""
-    if not os.path.exists(REGISTRY_PATH):
-        os.makedirs(os.path.dirname(REGISTRY_PATH), exist_ok=True)
-        save_registry({"datasets": {}})
-
-    with open(REGISTRY_PATH, "r") as f:
-        return json.load(f)
-
+    """Load the registry from disk safely."""
+    os.makedirs(os.path.dirname(REGISTRY_PATH), exist_ok=True)
+    lock_path = REGISTRY_PATH + ".lock"
+    with portalocker.Lock(lock_path, 'w', timeout=10):
+        if not os.path.exists(REGISTRY_PATH):
+            with open(REGISTRY_PATH, "w") as f:
+                json.dump({"datasets": {}}, f, indent=4)
+        with open(REGISTRY_PATH, "r") as f:
+            return json.load(f)
 
 def save_registry(data: dict) -> None:
-    """Persist the registry dict to disk."""
+    """Persist the registry dict to disk safely."""
     os.makedirs(os.path.dirname(REGISTRY_PATH), exist_ok=True)
-    with open(REGISTRY_PATH, "w") as f:
-        json.dump(data, f, indent=4)
+    lock_path = REGISTRY_PATH + ".lock"
+    with portalocker.Lock(lock_path, 'w', timeout=10):
+        with open(REGISTRY_PATH, "w") as f:
+            json.dump(data, f, indent=4)
 
 
 # ---------------------------------------------------------------------------
@@ -64,19 +87,18 @@ def register_dataset(display_name: str, dataset_type: str, raw_csv_path: str) ->
     `raw_csv_path` may be absolute or relative; it is normalised to relative
     before being stored.
     """
-    registry = load_registry()
     dataset_id = uuid.uuid4().hex[:8]
 
-    registry["datasets"][dataset_id] = {
-        "display_name": display_name,
-        "type": dataset_type,
-        "status": "raw",
-        "paths": {
-            "raw_csv": rel_path(raw_csv_path) if raw_csv_path else ""
-        },
-    }
+    with atomic_registry() as registry:
+        registry["datasets"][dataset_id] = {
+            "display_name": display_name,
+            "type": dataset_type,
+            "status": "raw",
+            "paths": {
+                "raw_csv": rel_path(raw_csv_path) if raw_csv_path else ""
+            },
+        }
 
-    save_registry(registry)
     return dataset_id
 
 
@@ -86,19 +108,16 @@ def update_dataset_status(dataset_id: str, new_status: str, new_paths_dict: dict
     All path values in `new_paths_dict` are normalised to relative paths
     before being stored so registry.json stays portable.
     """
-    registry = load_registry()
+    with atomic_registry() as registry:
+        if dataset_id not in registry["datasets"]:
+            raise ValueError(f"Dataset '{dataset_id}' not found in registry.")
 
-    if dataset_id not in registry["datasets"]:
-        raise ValueError(f"Dataset '{dataset_id}' not found in registry.")
+        dataset = registry["datasets"][dataset_id]
+        dataset["status"] = new_status
 
-    dataset = registry["datasets"][dataset_id]
-    dataset["status"] = new_status
-
-    for key, value in new_paths_dict.items():
-        # Normalise: store relative paths only
-        dataset["paths"][key] = rel_path(value) if value else ""
-
-    save_registry(registry)
+        for key, value in new_paths_dict.items():
+            # Normalise: store relative paths only
+            dataset["paths"][key] = rel_path(value) if value else ""
 
 
 def get_dataset(dataset_id: str) -> dict:
@@ -112,3 +131,27 @@ def get_dataset(dataset_id: str) -> dict:
 def get_all_datasets() -> dict:
     """Return the full datasets dict keyed by UUID."""
     return load_registry()["datasets"]
+
+
+def delete_dataset(dataset_id: str) -> None:
+    """
+    Delete a dataset from the registry and remove its associated files.
+    """
+    with atomic_registry() as registry:
+        if dataset_id not in registry["datasets"]:
+            raise ValueError(f"Dataset '{dataset_id}' not found in registry.")
+        
+        dataset = registry["datasets"][dataset_id]
+        
+        # Delete files safely
+        for key, rel_p in dataset["paths"].items():
+            if not rel_p: continue
+            abs_p = resolve_path(rel_p)
+            if os.path.exists(abs_p):
+                try:
+                    os.remove(abs_p)
+                except Exception as e:
+                    print(f"Warning: failed to remove file {abs_p}: {e}")
+                    
+        # Remove from registry
+        del registry["datasets"][dataset_id]

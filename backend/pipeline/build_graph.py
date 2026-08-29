@@ -7,7 +7,7 @@ from torch_geometric.data import Data
 import numpy as np
 import os
 import itertools
-import registry
+from . import registry
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -26,7 +26,13 @@ def convert_csv_to_tensor(dataset_id: str) -> None:
     dataset_info = registry.get_dataset(dataset_id)
 
     # Resolve raw CSV path (stored as relative in registry)
+    if "raw_csv" not in dataset_info["paths"] or not dataset_info["paths"]["raw_csv"]:
+        raise ValueError(f"Dataset '{dataset_id}' does not have a raw_csv path in the registry.")
+        
     input_csv_path = registry.resolve_path(dataset_info["paths"]["raw_csv"])
+    if not os.path.exists(input_csv_path):
+        raise FileNotFoundError(f"Raw CSV missing: {input_csv_path}")
+        
     dataset_type   = dataset_info["type"]           # "train" or "test"
     is_labeled     = (dataset_type == "train")
 
@@ -114,6 +120,8 @@ def convert_csv_to_tensor(dataset_id: str) -> None:
 
     # ---- Persist tensor ----------------------------------------------------
     torch.save(data, output_pt_path)
+    # Verify the tensor serialized properly
+    torch.load(output_pt_path, weights_only=False)
     print(f"[build_graph] Saved tensor → {output_pt_path}")
 
     # ---- Update registry (store relative path) -----------------------------

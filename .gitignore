@@ -4,3 +4,4 @@ venv/
 .venv/
 *.csv
 *.pt
+backend/data/registry.json

@@ -2,9 +2,16 @@ import torch
 import torch.nn as nn
 import json
 import os
-import registry
+import sys
+
+_PIPELINE_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.abspath(os.path.join(_PIPELINE_DIR, "..", ".."))
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
+from backend.pipeline import registry
+from backend.pipeline.model import FraudGATv2
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from model import FraudGATv2
 
 # ---------------------------------------------------------------------------
 # Internal helpers
@@ -14,10 +21,10 @@ def _pipeline_dir() -> str:
     return os.path.dirname(os.path.abspath(__file__))
 
 
-def _model_weights_path() -> str:
-    """Absolute path to the shared GNN weight file."""
+def _model_weights_path(dataset_id: str) -> str:
+    """Absolute path to the GNN weight file, namespaced by dataset_id."""
     return os.path.abspath(
-        os.path.join(_pipeline_dir(), "..", "data", "models", "gnn_weights.pt")
+        os.path.join(_pipeline_dir(), "..", "data", "models", f"{dataset_id}_gnn_weights.pt")
     )
 
 
@@ -119,14 +126,35 @@ def train_model(data, dataset_id: str) -> None:
         json.dump(metrics_dict, f, indent=2)
     print(f"  Metrics saved → {metrics_abs}")
 
-    # Registry update (rel_path applied inside update_dataset_status)
-    registry.update_dataset_status(dataset_id, "trained", {"metrics": metrics_abs})
-
     # ---- Persist model weights ---------------------------------------------
-    weights_abs = _model_weights_path()
+    weights_abs = _model_weights_path(dataset_id)
     os.makedirs(os.path.dirname(weights_abs), exist_ok=True)
     torch.save(model.state_dict(), weights_abs)
     print(f"  Model weights saved → {weights_abs}\n")
+
+    # Store model weight path in registry (relative)
+    registry.update_dataset_status(
+        dataset_id,
+        "trained",
+        {"model_weights": registry.rel_path(weights_abs)}
+    )
+
+    # Update metrics
+    registry.update_dataset_status(dataset_id, "trained", {"metrics": registry.rel_path(metrics_abs)})
+
+
+def undo_training(dataset_id: str) -> None:
+    """Removes model artifacts and resets registry status."""
+    weights_abs = _model_weights_path(dataset_id)
+    metrics_abs = _metrics_path(dataset_id)
+
+    if os.path.exists(weights_abs):
+        os.remove(weights_abs)
+    if os.path.exists(metrics_abs):
+        os.remove(metrics_abs)
+
+    registry.update_dataset_status(dataset_id, "uploaded", {"model_weights": None, "metrics": None})
+    print(f"  Training undone for {dataset_id}")
 
 
 # ---------------------------------------------------------------------------
@@ -141,7 +169,7 @@ def run_inference(data, dataset_id: str) -> None:
     """
     print("--- Running Inference ---")
 
-    weights_abs = _model_weights_path()
+    weights_abs = _model_weights_path(dataset_id)
     if not os.path.exists(weights_abs):
         raise FileNotFoundError(
             f"Model weights not found at {weights_abs}. "

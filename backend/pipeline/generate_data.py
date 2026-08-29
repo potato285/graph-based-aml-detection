@@ -116,9 +116,14 @@ def generate_transactions(num_records=2000, is_test=False):
 
 if __name__ == "__main__":
     import os
-    import registry
-
+    import sys
     _BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
+    _PROJECT_ROOT = os.path.abspath(os.path.join(_BASE_DIR, "..", ".."))
+    if _PROJECT_ROOT not in sys.path:
+        sys.path.insert(0, _PROJECT_ROOT)
+        
+    from backend.pipeline import registry
+
     RAW_TRAIN_DIR = os.path.abspath(os.path.join(_BASE_DIR, "..", "data", "raw_train"))
     RAW_TEST_DIR  = os.path.abspath(os.path.join(_BASE_DIR, "..", "data", "raw_test"))
 
