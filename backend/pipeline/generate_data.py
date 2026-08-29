@@ -117,27 +117,27 @@ def generate_transactions(num_records=2000, is_test=False):
 if __name__ == "__main__":
     import os
     import registry
-    
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    RAW_TRAIN_DIR = os.path.join(BASE_DIR, "..", "data", "raw_train")
-    RAW_TEST_DIR = os.path.join(BASE_DIR, "..", "data", "raw_test")
-    
-    # Ensure directories exist
+
+    _BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
+    RAW_TRAIN_DIR = os.path.abspath(os.path.join(_BASE_DIR, "..", "data", "raw_train"))
+    RAW_TEST_DIR  = os.path.abspath(os.path.join(_BASE_DIR, "..", "data", "raw_test"))
+
     os.makedirs(RAW_TRAIN_DIR, exist_ok=True)
-    os.makedirs(RAW_TEST_DIR, exist_ok=True)
-    
-    # Train Dataset
-    train_df = generate_transactions(num_records=2000, is_test=False)
-    train_uuid = registry.register_dataset("Synthetic_Train_10k", "train", "")
-    train_csv_path = os.path.join(RAW_TRAIN_DIR, f"{train_uuid}.csv")
+    os.makedirs(RAW_TEST_DIR,  exist_ok=True)
+
+    # ---- Train Dataset -----------------------------------------------------
+    train_df        = generate_transactions(num_records=2000, is_test=False)
+    train_uuid      = registry.register_dataset("Synthetic_Train_10k", "train", "")
+    train_csv_path  = os.path.join(RAW_TRAIN_DIR, f"{train_uuid}.csv")
     train_df.to_csv(train_csv_path, index=False)
+    # update_dataset_status stores the path relative to REPO_ROOT automatically
     registry.update_dataset_status(train_uuid, "raw", {"raw_csv": train_csv_path})
-    print(f"Train dataset {train_uuid} generated with shape:", train_df.shape)
-    
-    # Test Dataset
-    test_df = generate_transactions(num_records=2000, is_test=True)
-    test_uuid = registry.register_dataset("Synthetic_Test_10k", "test", "")
+    print(f"Train dataset '{train_uuid}' generated — shape: {train_df.shape}")
+
+    # ---- Test Dataset ------------------------------------------------------
+    test_df       = generate_transactions(num_records=2000, is_test=True)
+    test_uuid     = registry.register_dataset("Synthetic_Test_10k", "test", "")
     test_csv_path = os.path.join(RAW_TEST_DIR, f"{test_uuid}.csv")
     test_df.to_csv(test_csv_path, index=False)
     registry.update_dataset_status(test_uuid, "raw", {"raw_csv": test_csv_path})
-    print(f"Test dataset {test_uuid} generated with shape:", test_df.shape)
+    print(f"Test  dataset '{test_uuid}' generated — shape: {test_df.shape}")

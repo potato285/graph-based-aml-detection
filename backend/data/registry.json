@@ -5,9 +5,9 @@
             "type": "train",
             "status": "trained",
             "paths": {
-                "raw_csv": "/Users/harishrajan2511/graph_based_aml_detection/backend/pipeline/../data/raw_train/ae834696.csv",
-                "tensor": "/Users/harishrajan2511/graph_based_aml_detection/backend/pipeline/../data/processed/ae834696.pt",
-                "metrics": "/Users/harishrajan2511/graph_based_aml_detection/backend/pipeline/../../frontend/public/metrics/ae834696_metrics.json"
+                "raw_csv": "backend/data/raw_train/ae834696.csv",
+                "tensor": "backend/data/processed/train/ae834696.pt",
+                "metrics": "frontend/public/metrics/ae834696_metrics.json"
             }
         },
         "43cc3385": {
@@ -15,9 +15,9 @@
             "type": "test",
             "status": "inferred",
             "paths": {
-                "raw_csv": "/Users/harishrajan2511/graph_based_aml_detection/backend/pipeline/../data/raw_test/43cc3385.csv",
-                "tensor": "/Users/harishrajan2511/graph_based_aml_detection/backend/pipeline/../data/processed/43cc3385.pt",
-                "graph_results": "/Users/harishrajan2511/graph_based_aml_detection/backend/pipeline/../../frontend/public/graphs/43cc3385_results.json"
+                "raw_csv": "backend/data/raw_test/43cc3385.csv",
+                "tensor": "backend/data/processed/test/43cc3385.pt",
+                "graph_results": "frontend/public/graphs/43cc3385_results.json"
             }
         }
     }
