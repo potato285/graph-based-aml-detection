@@ -116,15 +116,28 @@ def generate_transactions(num_records=2000, is_test=False):
 
 if __name__ == "__main__":
     import os
+    import registry
+    
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    RAW_TRAIN_DIR = os.path.join(BASE_DIR, "..", "data", "raw_train")
+    RAW_TEST_DIR = os.path.join(BASE_DIR, "..", "data", "raw_test")
     
     # Ensure directories exist
-    os.makedirs("../data/raw_train", exist_ok=True)
-    os.makedirs("../data/raw_test", exist_ok=True)
+    os.makedirs(RAW_TRAIN_DIR, exist_ok=True)
+    os.makedirs(RAW_TEST_DIR, exist_ok=True)
     
+    # Train Dataset
     train_df = generate_transactions(num_records=2000, is_test=False)
-    train_df.to_csv('../data/raw_train/train_dataset.csv', index=False)
-    print("train_dataset.csv generated with shape:", train_df.shape)
+    train_uuid = registry.register_dataset("Synthetic_Train_10k", "train", "")
+    train_csv_path = os.path.join(RAW_TRAIN_DIR, f"{train_uuid}.csv")
+    train_df.to_csv(train_csv_path, index=False)
+    registry.update_dataset_status(train_uuid, "raw", {"raw_csv": train_csv_path})
+    print(f"Train dataset {train_uuid} generated with shape:", train_df.shape)
     
+    # Test Dataset
     test_df = generate_transactions(num_records=2000, is_test=True)
-    test_df.to_csv('../data/raw_test/test_dataset.csv', index=False)
-    print("test_dataset.csv generated with shape:", test_df.shape)
+    test_uuid = registry.register_dataset("Synthetic_Test_10k", "test", "")
+    test_csv_path = os.path.join(RAW_TEST_DIR, f"{test_uuid}.csv")
+    test_df.to_csv(test_csv_path, index=False)
+    registry.update_dataset_status(test_uuid, "raw", {"raw_csv": test_csv_path})
+    print(f"Test dataset {test_uuid} generated with shape:", test_df.shape)
