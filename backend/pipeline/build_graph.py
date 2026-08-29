@@ -46,6 +46,19 @@ def convert_csv_to_tensor(dataset_id: str) -> None:
 
     print(f"[build_graph] Processing {input_csv_path} → {output_pt_path}")
     df = pd.read_csv(input_csv_path)
+    # -------------------------------------------------------------------
+    # Validate required CSV columns
+    # -------------------------------------------------------------------
+    required_columns = ["sender_account", "receiver_account", "amount"]
+    if is_labeled:
+        required_columns.append("is_fraud")
+    missing = set(required_columns) - set(df.columns)
+    if missing:
+        raise ValueError(
+            f"CSV for dataset '{dataset_id}' is missing required column(s): {', '.join(sorted(missing))}. "
+            "Expected columns: " + ", ".join(required_columns)
+        )
+    
 
     # ---- Build directed graph ----------------------------------------------
     G     = nx.DiGraph()

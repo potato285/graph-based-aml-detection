@@ -7,3 +7,5 @@ venv/
 backend/data/registry.json
 frontend/public/graphs/
 frontend/public/metrics/
+!frontend/public/graphs/.gitkeep
+!frontend/public/metrics/.gitkeep

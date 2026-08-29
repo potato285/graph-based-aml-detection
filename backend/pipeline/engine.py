@@ -223,7 +223,7 @@ def run_inference(data, dataset_id: str, train_dataset_id: str = None) -> None:
     print(f"  Inference complete. Graph JSON saved → {graph_abs}\n")
 
     # Registry update (rel_path applied inside update_dataset_status)
-    registry.update_dataset_status(dataset_id, "inferred", {"graph_results": graph_abs})
+    registry.update_dataset_status(dataset_id, "inferred", {"graph_results": registry.rel_path(graph_abs)})
 
 
 # ---------------------------------------------------------------------------
