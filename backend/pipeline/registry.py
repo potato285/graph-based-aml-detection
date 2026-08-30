@@ -52,6 +52,8 @@ def atomic_registry():
         with open(REGISTRY_PATH, "r") as f:
             try:
                 data = json.load(f)
+                if not isinstance(data, dict) or "datasets" not in data:
+                    data = {"datasets": {}}
             except json.JSONDecodeError:
                 # Corrupted registry – start fresh and overwrite the file
                 data = {"datasets": {}}
@@ -61,6 +63,8 @@ def atomic_registry():
         
         yield data
         
+        if not isinstance(data, dict) or "datasets" not in data:
+            data = {"datasets": {}}
         with open(REGISTRY_PATH, "w") as f:
             json.dump(data, f, indent=4)
 
@@ -75,6 +79,8 @@ def load_registry() -> dict:
         with open(REGISTRY_PATH, "r") as f:
             try:
                 data = json.load(f)
+                if not isinstance(data, dict) or "datasets" not in data:
+                    data = {"datasets": {}}
             except json.JSONDecodeError:
                 # Corrupted registry – reset to empty dict and overwrite the file
                 data = {"datasets": {}}

@@ -6,13 +6,14 @@ import ForceGraphCanvas from '../components/ForceGraphCanvas';
 import LegendModal from '../components/LegendModal';
 import NodeInspector from '../components/NodeInspector';
 import GraphTakeaways from '../components/GraphTakeaways';
+import HighVolumeDashboard from '../components/HighVolumeDashboard';
 
 export default function GraphExplorer() {
   const [datasets, setDatasets] = useState([]);
   const [selectedInferredId, setSelectedInferredId] = useState('');
   const [graphData, setGraphData] = useState(null);
   
-  const [threshold, setThreshold] = useState(0.4); // default: 40% risk — keeps node count manageable
+  const [threshold, setThreshold] = useState(0.4); // default: 40% risk for 2D graph view
   const [selectedNode, setSelectedNode] = useState(null);
 
   const [loadingRegistry, setLoadingRegistry] = useState(true);
@@ -73,6 +74,8 @@ export default function GraphExplorer() {
   }, [selectedInferredId]);
 
   const inferredCount = datasets.filter((d) => d.status === 'inferred').length;
+  const totalNodeCount = graphData?.nodes?.length ?? 0;
+  const isHighVolume = totalNodeCount > 400;
 
   return (
     <div>
@@ -105,7 +108,7 @@ export default function GraphExplorer() {
         <div className="placeholder-view">
           <div className="empty-icon" style={{ marginBottom: '1.5rem', color: 'var(--accent-purple)' }}>
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 3a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3zM6 15a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3zm12 0a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z" />
+              <path d="M18 3a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0-3-3zM6 15a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3zm12 0a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0-3-3z" />
               <path d="M9 9l6 6M15 9l-6 6" />
             </svg>
           </div>
@@ -115,12 +118,12 @@ export default function GraphExplorer() {
           </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
           {/* Top Selection panel */}
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+            gridTemplateColumns: isHighVolume ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', 
             gap: '1.5rem' 
           }}>
             <InferenceSelector
@@ -128,10 +131,12 @@ export default function GraphExplorer() {
               selectedId={selectedInferredId}
               onSelect={setSelectedInferredId}
             />
-            <RiskSlider
-              value={threshold}
-              onChange={setThreshold}
-            />
+            {!isHighVolume && (
+              <RiskSlider
+                value={threshold}
+                onChange={setThreshold}
+              />
+            )}
           </div>
 
           {loadingGraph ? (
@@ -140,39 +145,71 @@ export default function GraphExplorer() {
               <p>Reconstructing Graph Topology...</p>
             </div>
           ) : graphData ? (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr',
-              gap: '2rem',
-              animation: 'fadeIn 0.3s ease'
-            }} className="graph-workspace-grid">
-              
-              {/* Force Directed Graph Area */}
-              <div style={{ position: 'relative', minWidth: 0 }}>
-                <ForceGraphCanvas
-                  graphData={graphData}
-                  threshold={threshold}
-                  selectedNode={selectedNode}
-                  onSelectNode={setSelectedNode}
+            isHighVolume ? (
+              /* High-Volume Degradation Mode (> 400 nodes) */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{
+                  background: 'rgba(59, 130, 246, 0.12)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '1rem 1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  color: '#93c5fd',
+                  fontSize: '0.92rem'
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span>
+                    <strong>Large Dataset Detected ({totalNodeCount} nodes).</strong> Switching to High-Volume Forensic View for performance.
+                  </span>
+                </div>
+
+                <HighVolumeDashboard
+                  nodes={graphData.nodes}
+                  links={graphData.links}
                 />
-                
-                {/* Floating Legend Panel overlay */}
-                <LegendModal />
               </div>
-
-              {/* Right Side Panel: Takeaways & Node Inspector */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxHeight: '600px' }}>
-                <GraphTakeaways graphData={graphData} threshold={threshold} />
+            ) : (
+              /* Interactive 2D Visual Graph Mode (<= 400 nodes) */
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr',
+                gap: '2rem',
+                animation: 'fadeIn 0.3s ease'
+              }} className="graph-workspace-grid">
                 
-                {selectedNode && (
-                  <NodeInspector
+                {/* Force Directed Graph Area */}
+                <div style={{ position: 'relative', minWidth: 0 }}>
+                  <ForceGraphCanvas
+                    graphData={graphData}
+                    threshold={threshold}
                     selectedNode={selectedNode}
-                    onClose={() => setSelectedNode(null)}
+                    onSelectNode={setSelectedNode}
                   />
-                )}
-              </div>
+                  
+                  {/* Floating Legend Panel overlay */}
+                  <LegendModal />
+                </div>
 
-            </div>
+                {/* Right Side Panel: Takeaways & Node Inspector */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxHeight: '600px' }}>
+                  <GraphTakeaways graphData={graphData} threshold={threshold} />
+                  
+                  {selectedNode && (
+                    <NodeInspector
+                      selectedNode={selectedNode}
+                      onClose={() => setSelectedNode(null)}
+                    />
+                  )}
+                </div>
+
+              </div>
+            )
           ) : (
             <div className="empty-placeholder">
               <p>Select an inferred Test graph above to render transaction mapping.</p>

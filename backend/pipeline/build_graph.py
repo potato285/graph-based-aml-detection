@@ -46,6 +46,17 @@ def convert_csv_to_tensor(dataset_id: str) -> None:
 
     print(f"[build_graph] Processing {input_csv_path} → {output_pt_path}")
     df = pd.read_csv(input_csv_path)
+
+    # Auto-rename columns if the CSV uses alternative schema
+    column_mapping = {
+        "source": "sender_account",
+        "target": "receiver_account",
+        "IsLaundering": "is_fraud",
+        "islaundering": "is_fraud",
+        "is_fraud_label": "is_fraud"
+    }
+    df = df.rename(columns={k: v for k, v in column_mapping.items() if k in df.columns})
+
     # -------------------------------------------------------------------
     # Validate required CSV columns
     # -------------------------------------------------------------------
