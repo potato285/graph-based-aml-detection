@@ -11,60 +11,107 @@ export default function LegendModal() {
     { name: 'Pass-Through Mule', color: '#EAB308', desc: 'Default intermediary pass-through node (GNN Risk ≥ 50%)' }
   ];
 
+  const [showLegend, setShowLegend] = useState(false);
+
   return (
     <>
-      {/* Floating Legend Overlay Panel */}
-      <div style={{
-        position: 'absolute',
-        bottom: '1.5rem',
-        left: '1.5rem',
-        background: 'rgba(19, 27, 46, 0.9)',
-        border: '1px solid var(--border-color)',
-        borderRadius: 'var(--radius-md)',
-        padding: '1rem',
-        boxShadow: 'var(--shadow-md)',
-        backdropFilter: 'blur(8px)',
-        zIndex: 50,
-        maxWidth: '300px'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-          <h4 style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', margin: 0 }}>
-            Color Mapping Legend
-          </h4>
-          <button
-            onClick={() => setShowInfo(true)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--primary)',
-              cursor: 'pointer',
-              display: 'flex',
-              padding: '2px',
-              fontSize: '1.1rem'
-            }}
-            title="Read Topological AML Context"
-          >
-            ⓘ
-          </button>
-        </div>
+      {/* Floating Toggle Button */}
+      {!showLegend && (
+        <button
+          onClick={() => setShowLegend(true)}
+          style={{
+            position: 'absolute',
+            bottom: '1.5rem',
+            left: '1.5rem',
+            background: 'rgba(19, 27, 46, 0.9)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.5rem 1rem',
+            color: 'var(--text-primary)',
+            cursor: 'pointer',
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            boxShadow: 'var(--shadow-md)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <span style={{ fontSize: '1.2rem' }}>ℹ️</span> Show Legend
+        </button>
+      )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {legendItems.map((item) => (
-            <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
-              <span style={{ 
-                width: '10px', 
-                height: '10px', 
-                borderRadius: '50%', 
-                backgroundColor: item.color, 
-                boxShadow: item.color !== '#E5E7EB' ? `0 0 6px ${item.color}` : 'none',
-                display: 'inline-block',
-                flexShrink: 0
-              }}></span>
-              <span style={{ fontWeight: 650, color: 'var(--text-primary)' }}>{item.name}</span>
+      {/* Floating Legend Overlay Panel */}
+      {showLegend && (
+        <div style={{
+          position: 'absolute',
+          bottom: '1.5rem',
+          left: '1.5rem',
+          background: 'rgba(19, 27, 46, 0.9)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-md)',
+          padding: '1rem',
+          boxShadow: 'var(--shadow-md)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 50,
+          maxWidth: '300px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <h4 style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', margin: 0 }}>
+              Color Mapping Legend
+            </h4>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={() => setShowInfo(true)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--primary)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  padding: '2px',
+                  fontSize: '1.1rem'
+                }}
+                title="Read Topological AML Context"
+              >
+                ⓘ
+              </button>
+              <button
+                onClick={() => setShowLegend(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  padding: '2px',
+                  fontSize: '1.2rem'
+                }}
+                title="Hide Legend"
+              >
+                ×
+              </button>
             </div>
-          ))}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {legendItems.map((item) => (
+              <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
+                <span style={{ 
+                  width: '10px', 
+                  height: '10px', 
+                  borderRadius: '50%', 
+                  backgroundColor: item.color, 
+                  boxShadow: item.color !== '#E5E7EB' ? `0 0 6px ${item.color}` : 'none',
+                  display: 'inline-block',
+                  flexShrink: 0
+                }}></span>
+                <span style={{ fontWeight: 650, color: 'var(--text-primary)' }}>{item.name}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* AML Explanatory Info Modal */}
       {showInfo && (

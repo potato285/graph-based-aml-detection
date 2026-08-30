@@ -1,156 +1,235 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useEffect, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
+
+const MAX_VISIBLE_NODES = 400; // Performance cap
 
 export default function ForceGraphCanvas({ graphData, threshold, selectedNode, onSelectNode }) {
   const fgRef = useRef();
 
-  // Create a fast-lookup map for nodes
+  // Fast lookup map for nodes — only rebuilds when graphData changes
   const nodesMap = useMemo(() => {
     const map = new Map();
     if (graphData && graphData.nodes) {
-      graphData.nodes.forEach((node) => {
-        map.set(node.id, node);
-      });
+      graphData.nodes.forEach((node) => map.set(node.id, node));
     }
     return map;
   }, [graphData]);
 
-  // 1. Filter Nodes and Links according to Risk Threshold
-  const filteredData = useMemo(() => {
-    if (!graphData || !graphData.nodes) return { nodes: [], links: [] };
+  // Filter nodes/links by threshold. Cap at MAX_VISIBLE_NODES for performance.
+  const { filteredData, isCapped } = useMemo(() => {
+    if (!graphData || !graphData.nodes) return { filteredData: { nodes: [], links: [] }, isCapped: false };
 
-    // Filter nodes
-    const nodes = graphData.nodes.filter((node) => node.risk_score >= threshold);
+    let nodes = graphData.nodes.filter((n) => n.risk_score >= threshold);
+    const wasCapped = nodes.length > MAX_VISIBLE_NODES;
+
+    // If too many nodes, prefer high-risk ones
+    if (wasCapped) {
+      nodes = [...nodes].sort((a, b) => b.risk_score - a.risk_score).slice(0, MAX_VISIBLE_NODES);
+    }
+
     const nodeIds = new Set(nodes.map((n) => n.id));
-
-    // Filter links (ensure source and target both exist in the filtered nodes list)
     const links = graphData.links.filter((link) => {
       const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
       const targetId = typeof link.target === 'object' ? link.target.id : link.target;
       return nodeIds.has(sourceId) && nodeIds.has(targetId);
     });
 
-    return { nodes, links };
+    return { filteredData: { nodes, links }, isCapped: wasCapped };
   }, [graphData, threshold]);
 
-  // Center the graph on dataset changes
+  // Set forces and fit after filteredData changes. Guard all d3Force calls.
   useEffect(() => {
-    if (fgRef.current) {
-      fgRef.current.zoomToFit(400, 50);
-    }
-  }, [graphData]);
+    if (!fgRef.current) return;
+    const timeout = setTimeout(() => {
+      if (!fgRef.current) return;
+      try {
+        fgRef.current.zoomToFit(600, 80);
+        const charge = fgRef.current.d3Force('charge');
+        if (charge) charge.strength(-700);
+        const link = fgRef.current.d3Force('link');
+        if (link) link.distance(100);
+        const collision = fgRef.current.d3Force('collision');
+        if (collision) collision.radius(12);
+      } catch (e) {
+        // Ignore transient force errors during unmount
+      }
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [filteredData]);
 
+  // ─── Color helpers ────────────────────────────────────────────────────────
   const getRawNodeColor = (node) => {
-    if (node.risk_score < 0.5) return '#E5E7EB'; // Safe
-    if (node.betti_1 === 1) return '#EF4444'; // Loop
-    if (node.in_degree > 5) return '#A855F7'; // Collector
-    if (node.out_degree > 5) return '#F97316'; // Distributor
-    return '#EAB308'; // Mule
+    if (node.risk_score < 0.5) return '#E5E7EB';
+    if (node.betti_1 >= 1)            return '#EF4444'; // Smurfing loop
+    if ((node.in_degree  ?? 0) > 5)   return '#A855F7'; // Funnel collector
+    if ((node.out_degree ?? 0) > 5)   return '#F97316'; // Scatter distributor
+    return '#EAB308';                                    // Pass-through mule
   };
 
   const getNodeColorRgba = (node) => {
-    const alpha = 0.4 + node.risk_score * 0.6; // scale from 0.4 to 1.0
+    const alpha = 0.4 + node.risk_score * 0.6;
     if (node.risk_score < 0.5) return `rgba(229, 231, 235, ${alpha})`;
-    if (node.betti_1 === 1) return `rgba(239, 68, 68, ${alpha})`;
-    if (node.in_degree > 5) return `rgba(168, 85, 247, ${alpha})`;
-    if (node.out_degree > 5) return `rgba(249, 115, 22, ${alpha})`;
+    if (node.betti_1 >= 1)           return `rgba(239, 68, 68, ${alpha})`;
+    if ((node.in_degree  ?? 0) > 5)  return `rgba(168, 85, 247, ${alpha})`;
+    if ((node.out_degree ?? 0) > 5)  return `rgba(249, 115, 22, ${alpha})`;
     return `rgba(234, 179, 8, ${alpha})`;
   };
 
-  const getLinkColor = (link) => {
+  // ─── Memoized callbacks (prevents graph from re-initializing on every render)
+  const getLinkColor = useCallback((link) => {
     const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
     const targetId = typeof link.target === 'object' ? link.target.id : link.target;
-    
-    const sourceNode = nodesMap.get(sourceId);
-    const targetNode = nodesMap.get(targetId);
+    const sNode = nodesMap.get(sourceId);
+    const tNode = nodesMap.get(targetId);
+    const sRisk = sNode ? sNode.risk_score : 0;
+    const tRisk = tNode ? tNode.risk_score : 0;
 
-    const sourceRisk = sourceNode ? sourceNode.risk_score : 0;
-    const targetRisk = targetNode ? targetNode.risk_score : 0;
-
-    if (sourceRisk >= 0.7 || targetRisk >= 0.7) {
-      // Highlight matching the higher risk node's classification color
-      const higherRiskNode = sourceRisk >= targetRisk ? sourceNode : targetNode;
-      if (higherRiskNode) {
-        if (higherRiskNode.betti_1 === 1) return 'rgba(239, 68, 68, 0.7)';
-        if (higherRiskNode.in_degree > 5) return 'rgba(168, 85, 247, 0.7)';
-        if (higherRiskNode.out_degree > 5) return 'rgba(249, 115, 22, 0.7)';
-        return 'rgba(234, 179, 8, 0.7)';
+    if (sRisk >= 0.7 || tRisk >= 0.7) {
+      const h = sRisk >= tRisk ? sNode : tNode;
+      if (h) {
+        if (h.betti_1 >= 1)           return 'rgba(239, 68, 68, 0.55)';
+        if ((h.in_degree  ?? 0) > 5)  return 'rgba(168, 85, 247, 0.55)';
+        if ((h.out_degree ?? 0) > 5)  return 'rgba(249, 115, 22, 0.55)';
+        return 'rgba(234, 179, 8, 0.55)';
       }
     }
-    return 'rgba(255, 255, 255, 0.15)'; // Safe link
-  };
+    return 'rgba(255, 255, 255, 0.07)';
+  }, [nodesMap]);
 
-  const hasParticleFlow = (link) => {
+  const hasParticleFlow = useCallback((link) => {
     const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
     const targetId = typeof link.target === 'object' ? link.target.id : link.target;
-    
-    const sourceNode = nodesMap.get(sourceId);
-    const targetNode = nodesMap.get(targetId);
+    const sNode = nodesMap.get(sourceId);
+    const tNode = nodesMap.get(targetId);
+    return (sNode?.risk_score ?? 0) >= 0.7 || (tNode?.risk_score ?? 0) >= 0.7;
+  }, [nodesMap]);
 
-    const sourceRisk = sourceNode ? sourceNode.risk_score : 0;
-    const targetRisk = targetNode ? targetNode.risk_score : 0;
-
-    return sourceRisk >= 0.7 || targetRisk >= 0.7;
-  };
-
-  // Render nodes with glowing circles and custom canvas context overrides
-  const drawNodeCanvas = (node, ctx, globalScale) => {
+  // nodeCanvasObject — only a new reference when selectedNode changes (via useCallback)
+  const drawNodeCanvas = useCallback((node, ctx, globalScale) => {
+    ctx.save();
     const isSelected = selectedNode && selectedNode.id === node.id;
-    const size = 3.5 + node.risk_score * 3;
+    const size = 3 + node.risk_score * 4;
 
-    // 1. Draw Selection Glow Ring
+    // Selection glow ring
     if (isSelected) {
       ctx.beginPath();
-      ctx.arc(node.x, node.y, size + 5, 0, 2 * Math.PI, false);
-      ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
+      ctx.arc(node.x, node.y, size + 6, 0, 2 * Math.PI, false);
+      ctx.fillStyle = 'rgba(59, 130, 246, 0.25)';
       ctx.fill();
-
       ctx.strokeStyle = '#3b82f6';
-      ctx.lineWidth = 1.2 / globalScale;
+      ctx.lineWidth = 2.0 / globalScale;
       ctx.stroke();
     }
 
-    // 2. Draw Node Circle
+    // Node fill
     ctx.beginPath();
     ctx.arc(node.x, node.y, size, 0, 2 * Math.PI, false);
     ctx.fillStyle = getNodeColorRgba(node);
     ctx.fill();
 
     // Node border
-    ctx.strokeStyle = node.risk_score >= 0.5 ? getRawNodeColor(node) : 'rgba(255,255,255,0.1)';
-    ctx.lineWidth = 0.8 / globalScale;
+    ctx.strokeStyle = node.risk_score >= 0.5 ? getRawNodeColor(node) : 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = isSelected ? 1.5 / globalScale : 0.7 / globalScale;
     ctx.stroke();
 
-    // 3. Draw ID Text Labels on zoom
-    if (globalScale > 8 || isSelected) {
-      const fontSize = Math.max(3.0, 9.0 / globalScale);
-      ctx.font = `${fontSize}px var(--font-sans)`;
+    // Labels — only when zoomed in enough to be readable
+    if (globalScale >= 2) {
+      const fontSize = Math.max(3, 9 / globalScale);
+      ctx.font = `${fontSize}px sans-serif`; // literal font — CSS vars don't resolve in canvas
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = isSelected ? '#ffffff' : '#9ca3af';
-      ctx.fillText(node.account_id, node.x, node.y + size + 3.5);
+      ctx.fillStyle = isSelected ? '#ffffff' : 'rgba(156, 163, 175, 0.85)';
+      ctx.fillText(node.account_id, node.x, node.y + size + Math.max(4, 7 / globalScale));
     }
+
+    ctx.restore();
+  }, [selectedNode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const drawNodePointerArea = useCallback((node, color, ctx) => {
+    const size = 3 + node.risk_score * 4;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, size + 5, 0, 2 * Math.PI, false);
+    ctx.fill();
+  }, []);
+
+  // ─── Zoom button handlers ─────────────────────────────────────────────────
+  const handleZoomIn = () => {
+    if (fgRef.current) fgRef.current.zoom(fgRef.current.zoom() * 1.35, 300);
+  };
+  const handleZoomOut = () => {
+    if (fgRef.current) fgRef.current.zoom(fgRef.current.zoom() * 0.70, 300);
+  };
+  const handleFitToScreen = () => {
+    if (fgRef.current) fgRef.current.zoomToFit(500, 60);
   };
 
   return (
-    <div style={{
-      position: 'relative',
-      width: '100%',
-      height: '600px',
-      background: 'rgba(11, 15, 25, 0.95)',
-      border: '1px solid var(--border-color)',
-      borderRadius: 'var(--radius-md)',
-      overflow: 'hidden'
-    }}>
-      {filteredData.nodes.length === 0 ? (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '600px',
+        background: 'rgba(11, 15, 25, 0.95)',
+        border: '1px solid var(--border-color)',
+        borderRadius: 'var(--radius-md)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Performance cap notice */}
+      {isCapped && (
         <div style={{
-          display: 'flex',
-          height: '100%',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--text-secondary)'
+          position: 'absolute',
+          top: '0.75rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(245, 158, 11, 0.15)',
+          border: '1px solid rgba(245, 158, 11, 0.4)',
+          borderRadius: '6px',
+          padding: '0.3rem 0.75rem',
+          fontSize: '0.78rem',
+          color: '#f59e0b',
+          zIndex: 50,
+          whiteSpace: 'nowrap',
         }}>
+          ⚠ Showing top {MAX_VISIBLE_NODES} highest-risk nodes — raise threshold to filter further
+        </div>
+      )}
+
+      {/* Floating Zoom Controls */}
+      <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', zIndex: 50 }}>
+        {[
+          { label: '+', title: 'Zoom In',       fn: handleZoomIn },
+          { label: '−', title: 'Zoom Out',      fn: handleZoomOut },
+          { label: '⟲', title: 'Fit to Screen', fn: handleFitToScreen },
+        ].map(({ label, title, fn }) => (
+          <button
+            key={title}
+            onClick={fn}
+            title={title}
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '6px',
+              background: 'rgba(19, 27, 46, 0.9)',
+              border: '1px solid var(--border-color)',
+              color: '#ffffff',
+              fontWeight: 'bold',
+              fontSize: '1.2rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {filteredData.nodes.length === 0 ? (
+        <div style={{ display: 'flex', height: '100%', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
           <p>No nodes exceed the current GNN risk threshold filter.</p>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Lower the slider to inspect the network topology.</p>
         </div>
@@ -161,17 +240,22 @@ export default function ForceGraphCanvas({ graphData, threshold, selectedNode, o
           width={window.innerWidth > 1024 ? 900 : window.innerWidth - 64}
           height={600}
           backgroundColor="#0b0f19"
-          nodeLabel={(node) => `Account: ${node.account_id} (Risk: ${Math.round(node.risk_score * 100)}%)`}
+          nodeLabel={(node) => `Account: ${node.account_id} · Risk: ${Math.round(node.risk_score * 100)}%`}
           nodeCanvasObject={drawNodeCanvas}
-          linkWidth={(link) => (hasParticleFlow(link) ? 2 : 1)}
+          nodePointerAreaPaint={drawNodePointerArea}
+          linkWidth={(link) => (hasParticleFlow(link) ? 1.5 : 0.5)}
           linkColor={getLinkColor}
-          linkDirectionalParticles={(link) => (hasParticleFlow(link) ? 3 : 0)}
+          linkDirectionalParticles={(link) => (hasParticleFlow(link) ? 2 : 0)}
           linkDirectionalParticleWidth={2}
-          linkDirectionalParticleSpeed={0.006}
+          linkDirectionalParticleSpeed={0.005}
           onNodeClick={(node) => onSelectNode(node)}
           onBackgroundClick={() => onSelectNode(null)}
-          cooldownTicks={100}
-          d3VelocityDecay={0.4}
+          cooldownTicks={80}
+          d3VelocityDecay={0.55}
+          minZoom={0.02}
+          maxZoom={25}
+          enableZoomInteraction={true}
+          enablePanInteraction={true}
         />
       )}
     </div>

@@ -5,13 +5,14 @@ import RiskSlider from '../components/RiskSlider';
 import ForceGraphCanvas from '../components/ForceGraphCanvas';
 import LegendModal from '../components/LegendModal';
 import NodeInspector from '../components/NodeInspector';
+import GraphTakeaways from '../components/GraphTakeaways';
 
 export default function GraphExplorer() {
   const [datasets, setDatasets] = useState([]);
   const [selectedInferredId, setSelectedInferredId] = useState('');
   const [graphData, setGraphData] = useState(null);
   
-  const [threshold, setThreshold] = useState(0.0); // default show all
+  const [threshold, setThreshold] = useState(0.4); // default: 40% risk — keeps node count manageable
   const [selectedNode, setSelectedNode] = useState(null);
 
   const [loadingRegistry, setLoadingRegistry] = useState(true);
@@ -159,12 +160,16 @@ export default function GraphExplorer() {
                 <LegendModal />
               </div>
 
-              {/* Node Inspector details */}
-              <div>
-                <NodeInspector
-                  selectedNode={selectedNode}
-                  onClose={() => setSelectedNode(null)}
-                />
+              {/* Right Side Panel: Takeaways & Node Inspector */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxHeight: '600px' }}>
+                <GraphTakeaways graphData={graphData} threshold={threshold} />
+                
+                {selectedNode && (
+                  <NodeInspector
+                    selectedNode={selectedNode}
+                    onClose={() => setSelectedNode(null)}
+                  />
+                )}
               </div>
 
             </div>

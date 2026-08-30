@@ -27,10 +27,10 @@ export default function NodeInspector({ selectedNode, onClose }) {
     if (selectedNode.betti_1 === 1) {
       scamType = 'Smurfing Loop Participant';
       color = '#EF4444';
-    } else if (selectedNode.in_degree > 5) {
+    } else if ((selectedNode.in_degree ?? 0) > 5) {
       scamType = 'Funnel Collector Node';
       color = '#A855F7';
-    } else if (selectedNode.out_degree > 5) {
+    } else if ((selectedNode.out_degree ?? 0) > 5) {
       scamType = 'Scatter Distributor Node';
       color = '#F97316';
     } else {
@@ -120,14 +120,14 @@ export default function NodeInspector({ selectedNode, onClose }) {
           <div>
             <span className="form-label" style={{ fontSize: '0.75rem' }}>Out-Degree</span>
             <p style={{ fontWeight: 700, fontSize: '1.2rem', fontFamily: 'var(--font-mono)' }}>
-              {selectedNode.out_degree}
+              {selectedNode.out_degree ?? '—'}
             </p>
           </div>
 
           <div>
             <span className="form-label" style={{ fontSize: '0.75rem' }}>Betti-1 Cycle</span>
-            <p style={{ fontWeight: 700, fontSize: '0.95rem', color: selectedNode.betti_1 === 1 ? 'var(--danger)' : 'var(--text-muted)' }}>
-              {selectedNode.betti_1 === 1 ? 'ACTIVE (Loop)' : 'INACTIVE'}
+            <p style={{ fontWeight: 700, fontSize: '0.95rem', color: selectedNode.betti_1 >= 1 ? 'var(--danger)' : 'var(--text-muted)' }}>
+              {selectedNode.betti_1 >= 1 ? 'ACTIVE (Loop)' : 'INACTIVE'}
             </p>
           </div>
 
