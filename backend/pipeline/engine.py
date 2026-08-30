@@ -31,20 +31,20 @@ def _model_weights_path(dataset_id: str) -> str:
 
 
 def _metrics_path(dataset_id: str) -> str:
-    """Absolute path for the training-metrics JSON consumed by the frontend."""
+    """Absolute path for the training-metrics JSON."""
     return os.path.abspath(
         os.path.join(
-            _pipeline_dir(), "..", "..", "frontend", "public", "metrics",
+            _pipeline_dir(), "..", "data", "exports", "metrics",
             f"{dataset_id}_metrics.json",
         )
     )
 
 
 def _graph_results_path(dataset_id: str) -> str:
-    """Absolute path for the inference graph JSON consumed by the frontend."""
+    """Absolute path for the inference graph JSON."""
     return os.path.abspath(
         os.path.join(
-            _pipeline_dir(), "..", "..", "frontend", "public", "graphs",
+            _pipeline_dir(), "..", "data", "exports", "graphs",
             f"{dataset_id}_results.json",
         )
     )
