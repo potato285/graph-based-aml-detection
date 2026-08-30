@@ -10,3 +10,4 @@ frontend/public/metrics/*
 !frontend/public/graphs/.gitkeep
 !frontend/public/metrics/.gitkeep
 *.lock
+dist/

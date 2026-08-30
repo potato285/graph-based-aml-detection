@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import DataControlCenter from './views/DataControlCenter';
 import ModelStudio from './views/ModelStudio';
+import GraphExplorer from './views/GraphExplorer';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('data-center'); // 'data-center' | 'model-studio' | 'graph-explorer'
@@ -59,23 +60,7 @@ export default function App() {
 
         {activeTab === 'model-studio' && <ModelStudio />}
 
-        {activeTab === 'graph-explorer' && (
-          <div className="placeholder-view">
-            <div className="empty-icon" style={{ marginBottom: '1.5rem', color: 'var(--accent-purple)' }}>
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 3a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3zM6 15a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3zm12 0a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z" />
-                <path d="M9 9l6 6M15 9l-6 6" />
-              </svg>
-            </div>
-            <h2 className="placeholder-title">Graph Explorer</h2>
-            <p className="placeholder-desc">
-              Explore interactively structured financial transactions, visualize Smurf rings and loops, and isolate suspicious accounts using 2D force-directed node-link visualizers.
-            </p>
-            <button className="btn btn-primary" style={{ maxWidth: '200px', marginTop: '2rem' }} onClick={() => setActiveTab('data-center')}>
-              Go to Data Center
-            </button>
-          </div>
-        )}
+        {activeTab === 'graph-explorer' && <GraphExplorer />}
       </main>
     </div>
   );

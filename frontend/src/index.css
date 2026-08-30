@@ -781,3 +781,10 @@ body {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
+
+@media (min-width: 1200px) {
+  .graph-workspace-grid {
+    grid-template-columns: 1fr 350px !important;
+  }
+}
+
