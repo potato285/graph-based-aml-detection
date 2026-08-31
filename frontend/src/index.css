@@ -17,8 +17,8 @@
 
   /* ─── Text (cool blue-white tinted) ─── */
   --text-primary:   #c8d8e8;
-  --text-secondary: #6a84a0;
-  --text-muted:     #384f66;
+  --text-secondary: #92adc8;
+  --text-muted:     #7090ae;
 
   /* ─── Primary: Crimson Red (the ONE accent) ─── */
   --primary:        #c0393b;
@@ -106,8 +106,8 @@ body::before {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
-  padding: 0 2rem;
-  height: 58px;
+  padding: 0 1.75rem;
+  height: 52px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -245,7 +245,7 @@ body::before {
 /* ─── Main Content ─── */
 .main-content {
   flex: 1;
-  padding: 2.5rem 2rem;
+  padding: 1.75rem 1.75rem;
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
@@ -253,11 +253,11 @@ body::before {
 
 /* ─── Page Headers ─── */
 .page-header {
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
 }
 
 .page-title {
-  font-size: 1.6rem;
+  font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.03em;
   margin-bottom: 0.35rem;
@@ -290,7 +290,7 @@ body::before {
 .grid-layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.5rem;
+  gap: 1.1rem;
 }
 
 @media (min-width: 1024px) {
@@ -313,7 +313,7 @@ body::before {
   background: var(--bg-card);
   border: 1px solid var(--border-card);
   border-radius: var(--radius-md);
-  padding: 1.375rem;
+  padding: 1.1rem;
   box-shadow: var(--shadow-sm);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -335,7 +335,7 @@ body::before {
 }
 
 .card-panel:hover {
-  border-color: rgba(99, 102, 241, 0.18);
+  border-color: rgba(80, 115, 160, 0.25);
   box-shadow: var(--shadow-md);
 }
 
@@ -344,7 +344,7 @@ body::before {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.875rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -358,7 +358,7 @@ body::before {
 
 /* ─── Forms ─── */
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .form-label {
@@ -430,7 +430,7 @@ body::before {
 .upload-zone {
   border: 1px dashed rgba(148, 163, 184, 0.12);
   border-radius: var(--radius-sm);
-  padding: 2rem 1.5rem;
+  padding: 1.375rem 1.25rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.22s ease;
@@ -519,7 +519,7 @@ body::before {
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 0.7rem 1.375rem;
+  padding: 0.6rem 1.1rem;
   border-radius: var(--radius-sm);
   border: none;
   cursor: pointer;
@@ -567,7 +567,7 @@ body::before {
 
 .registry-table th {
   background: rgba(8, 14, 26, 0.6);
-  padding: 0.7rem 1.125rem;
+  padding: 0.55rem 1rem;
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -578,7 +578,7 @@ body::before {
 }
 
 .registry-table td {
-  padding: 0.825rem 1.125rem;
+  padding: 0.65rem 1rem;
   border-bottom: 1px solid var(--border-subtle);
   vertical-align: middle;
 }
