@@ -21,11 +21,12 @@ export default function RiskSlider({ value, onChange }) {
           <span style={{ 
             fontFamily: 'var(--font-mono)', 
             fontWeight: 700, 
-            fontSize: '1.1rem',
+            fontSize: '0.9rem',
             color: 'var(--primary)',
             background: 'var(--primary-glow)',
-            padding: '0.15rem 0.5rem',
-            borderRadius: '4px'
+            padding: '0.1rem 0.5rem',
+            borderRadius: '4px',
+            border: '1px solid rgba(220, 38, 38, 0.2)'
           }}>
             ≥ {percentVal}%
           </span>

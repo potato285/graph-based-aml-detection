@@ -149,15 +149,15 @@ export default function GraphExplorer() {
               /* High-Volume Degradation Mode (> 400 nodes) */
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div style={{
-                  background: 'rgba(59, 130, 246, 0.12)',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  background: 'rgba(220, 38, 38, 0.08)',
+                  border: '1px solid rgba(220, 38, 38, 0.22)',
                   borderRadius: 'var(--radius-md)',
-                  padding: '1rem 1.25rem',
+                  padding: '0.875rem 1.25rem',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.75rem',
-                  color: '#93c5fd',
-                  fontSize: '0.92rem'
+                  color: '#f87171',
+                  fontSize: '0.85rem'
                 }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                     <circle cx="12" cy="12" r="10" />

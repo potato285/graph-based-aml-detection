@@ -93,7 +93,7 @@ export default function ForceGraphCanvas({ graphData, threshold, selectedNode, o
         return 'rgba(234, 179, 8, 0.55)';
       }
     }
-    return 'rgba(255, 255, 255, 0.07)';
+    return 'rgba(255, 255, 255, 0.28)';
   }, [nodesMap]);
 
   const hasParticleFlow = useCallback((link) => {
@@ -170,7 +170,7 @@ export default function ForceGraphCanvas({ graphData, threshold, selectedNode, o
         position: 'relative',
         width: '100%',
         height: '600px',
-        background: 'rgba(11, 15, 25, 0.95)',
+        background: 'rgba(14, 14, 16, 0.98)',
         border: '1px solid var(--border-color)',
         borderRadius: 'var(--radius-md)',
         overflow: 'hidden',
@@ -208,19 +208,20 @@ export default function ForceGraphCanvas({ graphData, threshold, selectedNode, o
             onClick={fn}
             title={title}
             style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '6px',
-              background: 'rgba(19, 27, 46, 0.9)',
-              border: '1px solid var(--border-color)',
-              color: '#ffffff',
-              fontWeight: 'bold',
-              fontSize: '1.2rem',
+              width: '28px',
+              height: '28px',
+              borderRadius: '5px',
+              background: 'rgba(17, 18, 20, 0.92)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: 'var(--text-secondary)',
+              fontWeight: '600',
+              fontSize: '1rem',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               backdropFilter: 'blur(8px)',
+              transition: 'color 0.15s ease, border-color 0.15s ease',
             }}
           >
             {label}
@@ -239,14 +240,14 @@ export default function ForceGraphCanvas({ graphData, threshold, selectedNode, o
           graphData={filteredData}
           width={window.innerWidth > 1024 ? 900 : window.innerWidth - 64}
           height={600}
-          backgroundColor="#0b0f19"
+          backgroundColor="#111214"
           nodeLabel={(node) => `Account: ${node.account_id} · Risk: ${Math.round(node.risk_score * 100)}%`}
           nodeCanvasObject={drawNodeCanvas}
           nodePointerAreaPaint={drawNodePointerArea}
           linkWidth={(link) => (hasParticleFlow(link) ? 1.5 : 0.5)}
           linkColor={getLinkColor}
-          linkDirectionalParticles={(link) => (hasParticleFlow(link) ? 2 : 0)}
-          linkDirectionalParticleWidth={2}
+          linkDirectionalParticles={(link) => (hasParticleFlow(link) ? 3 : 0)}
+          linkDirectionalParticleWidth={5}
           linkDirectionalParticleSpeed={0.005}
           onNodeClick={(node) => onSelectNode(node)}
           onBackgroundClick={() => onSelectNode(null)}

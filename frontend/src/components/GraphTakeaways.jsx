@@ -41,19 +41,15 @@ export default function GraphTakeaways({ graphData, threshold }) {
   if (!takeaways) return null;
 
   return (
-    <div style={{
-      padding: '1.5rem',
-      background: 'rgba(11, 15, 25, 0.95)',
-      border: '1px solid var(--border-color)',
-      borderRadius: 'var(--radius-md)',
+    <div className="card-panel" style={{
       height: '100%',
       overflowY: 'auto'
     }}>
-      <h3 style={{ marginTop: 0, marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>
+      <h3 style={{ marginTop: 0, marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
         Network Takeaways
       </h3>
       
-      <div style={{ marginBottom: '1.25rem', padding: '0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)' }}>
+      <div style={{ marginBottom: '1.25rem', padding: '0.6rem 0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
         <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
           Visible Accounts (≥ {Math.round(threshold * 100)}% Risk): <strong style={{ color: 'var(--text-primary)', fontSize: '1rem', marginLeft: '0.25rem' }}>{takeaways.total}</strong>
         </p>

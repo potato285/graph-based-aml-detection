@@ -26,11 +26,11 @@ export default function ModelSelector({ datasets, selectedId, onSelect }) {
             value={selectedId}
             onChange={(e) => onSelect(e.target.value)}
             style={{ 
-              background: 'rgba(19, 27, 46, 0.8)', 
-              borderColor: 'rgba(59, 130, 246, 0.3)',
+              background: 'rgba(0, 0, 0, 0.35)', 
+              borderColor: 'rgba(220, 38, 38, 0.25)',
               cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '1rem'
+              fontWeight: 500,
+              fontSize: '0.9rem'
             }}
           >
             {trainedModels.map((model) => (
