@@ -44,12 +44,20 @@ export default function ForceGraphCanvas({ graphData, threshold, selectedNode, o
       if (!fgRef.current) return;
       try {
         fgRef.current.zoomToFit(600, 80);
+        // Reduce repulsion so isolated nodes stay near the main cluster
         const charge = fgRef.current.d3Force('charge');
-        if (charge) charge.strength(-700);
+        if (charge) charge.strength(-220);
+        // Shorter link distance keeps connected subgraphs compact
         const link = fgRef.current.d3Force('link');
-        if (link) link.distance(100);
+        if (link) link.distance(55);
+        // Small collision radius to prevent overlap without pushing nodes far
         const collision = fgRef.current.d3Force('collision');
-        if (collision) collision.radius(12);
+        if (collision) collision.radius(9);
+        // Stronger centering pulls stray nodes back toward the mass
+        const centerX = fgRef.current.d3Force('x');
+        if (centerX) centerX.strength(0.08);
+        const centerY = fgRef.current.d3Force('y');
+        if (centerY) centerY.strength(0.08);
       } catch (e) {
         // Ignore transient force errors during unmount
       }
@@ -170,8 +178,8 @@ export default function ForceGraphCanvas({ graphData, threshold, selectedNode, o
         position: 'relative',
         width: '100%',
         height: '600px',
-        background: 'rgba(14, 14, 16, 0.98)',
-        border: '1px solid var(--border-color)',
+        background: 'rgba(10, 17, 30, 0.98)',
+        border: '1px solid var(--border-card)',
         borderRadius: 'var(--radius-md)',
         overflow: 'hidden',
       }}
@@ -211,8 +219,8 @@ export default function ForceGraphCanvas({ graphData, threshold, selectedNode, o
               width: '28px',
               height: '28px',
               borderRadius: '5px',
-              background: 'rgba(17, 18, 20, 0.92)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(13, 23, 36, 0.92)',
+              border: '1px solid rgba(80, 115, 160, 0.18)',
               color: 'var(--text-secondary)',
               fontWeight: '600',
               fontSize: '1rem',
@@ -240,7 +248,7 @@ export default function ForceGraphCanvas({ graphData, threshold, selectedNode, o
           graphData={filteredData}
           width={window.innerWidth > 1024 ? 900 : window.innerWidth - 64}
           height={600}
-          backgroundColor="#111214"
+          backgroundColor="#0d1724"
           nodeLabel={(node) => `Account: ${node.account_id} · Risk: ${Math.round(node.risk_score * 100)}%`}
           nodeCanvasObject={drawNodeCanvas}
           nodePointerAreaPaint={drawNodePointerArea}
